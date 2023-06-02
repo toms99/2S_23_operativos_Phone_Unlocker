@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <jansson.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 void encryptNumber(char *number, const char *key)
 {
@@ -52,6 +57,10 @@ char *getEncryptionKey(const char *key_path)
 
 char *key_path = "util/key.txt";
 
+#define BUFFER_SIZE 1024
+#define SERVER_IP "127.0.0.1"
+#define SERVER_PORT 8080
+
 int main(int argc, char *argv[])
 {
 
@@ -83,9 +92,41 @@ int main(int argc, char *argv[])
 
     printf("Número cifrado: %s\n", number);
 
-    encryptNumber(number, key);
+    // Crear el objeto JSON
+    json_t *root = json_object();
+    json_object_set_new(root, "number", json_string(number));
+    json_object_set_new(root, "mode", json_string(modo));
 
-    printf("Número descifrado: %s\n", number);
+    // Convertir el objeto JSON a una cadena
+    char *jsonStr = json_dumps(root, JSON_COMPACT);
+    printf("JSON enviado: %s\n", jsonStr);
+
+    // Crear socket UDP
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd == -1)
+    {
+        perror("Error al crear el socket");
+        exit(1);
+    }
+
+    // Configurar dirección del servidor
+    struct sockaddr_in servaddr;
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+    servaddr.sin_port = htons(SERVER_PORT);
+
+    // Enviar el JSON al servidor
+    ssize_t numBytes = sendto(sockfd, jsonStr, strlen(jsonStr), 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+    if (numBytes == -1)
+    {
+        perror("Error al enviar datos");
+        exit(1);
+    }
+
+    // Liberar recursos
+    json_decref(root);
+    close(sockfd);
 
     return 0;
 }
