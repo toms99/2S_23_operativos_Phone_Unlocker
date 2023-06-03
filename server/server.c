@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define BUFFER_SIZE 1024
 #define PORT 8080
@@ -118,18 +120,69 @@ int main()
         char decripted_number[strlen(number) + 1];
         strcpy(decripted_number, number);
 
-        char *key = getEncryptionKey(key_path);
+        // Crear tubería para comunicación entre procesos
+        int pipefd[2];
+        if (pipe(pipefd) == -1)
+        {
+            perror("Error al crear la tubería");
+            exit(1);
+        }
 
-        // Descifrar el número
-        decryptNumber(decripted_number, key);
+        // Crear proceso hijo
+        pid_t pid = fork();
 
-        printf("Número descifrado: %s\n", decripted_number);
-        printf("Modo: %d\n", mode);
+        if (pid == -1)
+        {
+            perror("Error al crear proceso hijo");
+            exit(1);
+        }
+        else if (pid == 0)
+        {
+            // Proceso hijo
 
-        // Liberar memoria
-        json_decref(root);
+            // Cerrar el extremo de escritura de la tubería
+            close(pipefd[0]);
+
+            // Obtener la clave de encriptación
+            char *key = getEncryptionKey(key_path);
+
+            // Enviar la clave al proceso padre a través de la tubería
+            write(pipefd[1], key, strlen(key) + 1);
+
+            // Cerrar el extremo de lectura de la tubería
+            close(pipefd[1]);
+
+            // Salir del proceso hijo
+            exit(0);
+        }
+        else
+        {
+            // Proceso padre
+
+            // Cerrar el extremo de escritura de la tubería
+            close(pipefd[1]);
+
+            // Leer la clave enviada por el proceso hijo desde la tubería
+            char key[100];
+            read(pipefd[0], key, sizeof(key));
+
+            // Cerrar el extremo de lectura de la tubería
+            close(pipefd[0]);
+
+            // Esperar a que el proceso hijo termine
+            int status;
+            waitpid(pid, &status, 0);
+
+            // Descifrar el número
+            decryptNumber(decripted_number, key);
+
+            printf("Número descifrado: %s\n", decripted_number);
+            printf("Modo: %d\n", mode);
+
+            // Liberar memoria
+            json_decref(root);
+        }
     }
-
     // Cerrar el socket
     close(sockfd);
 
