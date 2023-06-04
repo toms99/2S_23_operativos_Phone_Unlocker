@@ -27,6 +27,7 @@ add_driver_to_kernel: build_driver remove_driver_from_kernel
 
 first_add_driver_to_kernel: build_driver
 	sudo insmod driver/arduino_driver.ko
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
 
 remove_driver_from_kernel:
 	sudo rmmod arduino_driver
