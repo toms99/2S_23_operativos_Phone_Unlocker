@@ -1,1 +1,0 @@
-cmd_/home/fabian/Documents/TEC/11Semestre/SO/2S_23_operativos_Phone_Unlocker/Module.symvers := sed 's/ko$$/o/' /home/fabian/Documents/TEC/11Semestre/SO/2S_23_operativos_Phone_Unlocker/modules.order | scripts/mod/modpost -m -a  -o /home/fabian/Documents/TEC/11Semestre/SO/2S_23_operativos_Phone_Unlocker/Module.symvers -e -i Module.symvers   -T -

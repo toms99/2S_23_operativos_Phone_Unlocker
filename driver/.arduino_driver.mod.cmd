@@ -1,1 +1,0 @@
-cmd_/home/fabian/Documents/TEC/11Semestre/SO/2S_23_operativos_Phone_Unlocker/driver/arduino_driver.mod := printf '%s\n'   driver/arduino_driver.o | awk '!x[$$0]++ { print("/home/fabian/Documents/TEC/11Semestre/SO/2S_23_operativos_Phone_Unlocker/"$$0) }' > /home/fabian/Documents/TEC/11Semestre/SO/2S_23_operativos_Phone_Unlocker/driver/arduino_driver.mod
