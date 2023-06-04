@@ -11,3 +11,24 @@ build_Client:
 	
 run_Client: build_Client
 	./out/client 123456789 2
+
+obj-m += driver/arduino_driver.o
+
+KDIR := /lib/modules/$(shell uname -r)/build
+PWD := $(shell pwd)
+CC = x86_64-linux-gnu-gcc
+
+build_driver: clean_driver 
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules CC=$(CC)
+
+add_driver_to_kernel: build_driver remove_driver_from_kernel
+	sudo insmod driver/arduino_driver.ko
+
+first_add_driver_to_kernel: build_driver
+	sudo insmod driver/arduino_driver.ko
+
+remove_driver_from_kernel:
+	sudo rmmod arduino_driver
+
+clean_driver:
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
