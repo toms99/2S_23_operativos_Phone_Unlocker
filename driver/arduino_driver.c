@@ -1,6 +1,8 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/fs.h>
 #include <linux/usb.h>
+#include <linux/cdev.h>
 
 // ID del dispositivo USB
 #define USB_VENDOR_ID 0x2341
@@ -77,6 +79,9 @@ static struct usb_driver device_driver = {
     .disconnect = device_disconnect,
 };
 
+static struct cdev cdev;
+static dev_t dev;
+
 static const struct file_operations device_fops = {
     .open = device_open,
     .release = device_release,
@@ -87,20 +92,26 @@ static const struct file_operations device_fops = {
 
 static int __init custom_module_init(void)
 {
-    printk(KERN_INFO "Init Arduino Driver\n");
-    int result = usb_register(&device_driver);
+    dev_t dev = MKDEV(9, 11);
+    int result = register_chrdev_region(dev, 1, "arduino_device");
     if (result < 0)
     {
-        printk(KERN_ALERT "Error al registrar el controlador USB: %d\n", result);
+        printk(KERN_ALERT "Error al registrar el número mayor del dispositivo: %d\n", result);
         return result;
     }
 
-    // Registro del dispositivo de caracteres
-    result = register_chrdev(0, "arduino_operativos", &device_fops);
+    // Asignar las operaciones del dispositivo
+    cdev_init(&cdev, &device_fops);
+    cdev_add(&cdev, dev, 1);
+
+    printk(KERN_INFO "Número mayor del dispositivo registrado: %d\n", MAJOR(dev));
+
+    printk(KERN_INFO "Init Arduino Driver\n");
+    result = usb_register(&device_driver);
     if (result < 0)
     {
-        printk(KERN_ALERT "Error al registrar el dispositivo de caracteres: %d\n", result);
-        usb_deregister(&device_driver);
+        printk(KERN_ALERT "Error al registrar el controlador USB: %d\n", result);
+        unregister_chrdev_region(dev, 1);
         return result;
     }
 
@@ -109,8 +120,11 @@ static int __init custom_module_init(void)
 
 static void __exit custom_module_exit(void)
 {
-    unregister_chrdev(0, "arduino_device");
     usb_deregister(&device_driver);
+
+    cdev_del(&cdev);
+    unregister_chrdev_region(dev, 1);
+
     printk(KERN_INFO "Exit Arduino Driver\n");
 }
 
