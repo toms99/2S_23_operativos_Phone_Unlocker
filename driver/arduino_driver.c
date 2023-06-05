@@ -92,8 +92,10 @@ static const struct file_operations device_fops = {
 
 static int __init custom_module_init(void)
 {
-    dev_t dev = MKDEV(9, 11);
-    int result = register_chrdev_region(dev, 1, "arduino_device");
+    int result;
+
+    dev = MKDEV(9, 11);
+    result = register_chrdev_region(dev, 1, "arduino_device");
     if (result < 0)
     {
         printk(KERN_ALERT "Error al registrar el número mayor del dispositivo: %d\n", result);
