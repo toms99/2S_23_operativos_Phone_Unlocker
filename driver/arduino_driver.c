@@ -29,11 +29,60 @@ static void device_disconnect(struct usb_interface *interface)
     // Realizar acciones de limpieza y liberación de recursos si es necesario
 }
 
+static int device_open(struct inode *inode, struct file *file)
+{
+    printk(KERN_INFO "Archivo del dispositivo abierto\n");
+    return 0;
+}
+
+static int device_release(struct inode *inode, struct file *file)
+{
+    printk(KERN_INFO "Archivo del dispositivo cerrado\n");
+    return 0;
+}
+
+static ssize_t device_read(struct file *file, char __user *buffer, size_t length, loff_t *offset)
+{
+    printk(KERN_INFO "Leyendo del archivo del dispositivo\n");
+    return 0;
+}
+
+static ssize_t device_write(struct file *file, const char __user *buffer, size_t length, loff_t *offset)
+{
+    printk(KERN_INFO "Escribiendo en el archivo del dispositivo\n");
+    return length;
+}
+
+static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+    printk(KERN_INFO "IOCTL del dispositivo llamado. Comando: %u\n", cmd);
+
+    switch (cmd)
+    {
+    case 0: // Comando personalizado para imprimir un mensaje
+        printk(KERN_INFO "Hola soy el arduino\n");
+        break;
+
+    default:
+        return -EINVAL; // Comando no válido
+    }
+
+    return 0;
+}
+
 static struct usb_driver device_driver = {
     .name = "arduino_driver",
     .id_table = device_table,
     .probe = device_probe,
     .disconnect = device_disconnect,
+};
+
+static const struct file_operations device_fops = {
+    .open = device_open,
+    .release = device_release,
+    .read = device_read,
+    .write = device_write,
+    .unlocked_ioctl = device_ioctl,
 };
 
 static int __init custom_module_init(void)
@@ -46,12 +95,23 @@ static int __init custom_module_init(void)
         return result;
     }
 
+    // Registro del dispositivo de caracteres
+    result = register_chrdev(0, "arduino_operativos", &device_fops);
+    if (result < 0)
+    {
+        printk(KERN_ALERT "Error al registrar el dispositivo de caracteres: %d\n", result);
+        usb_deregister(&device_driver);
+        return result;
+    }
+
     return 0;
 }
 
 static void __exit custom_module_exit(void)
 {
+    unregister_chrdev(0, "arduino_device");
     usb_deregister(&device_driver);
+    printk(KERN_INFO "Exit Arduino Driver\n");
 }
 
 module_init(custom_module_init);
@@ -59,4 +119,4 @@ module_exit(custom_module_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Fabian");
-MODULE_DESCRIPTION("Módulo de kernel personalizado para el dispositivo Arduino Uno R3 (CDC ACM)");
+MODULE_DESCRIPTION("Controlador USB para Arduino");

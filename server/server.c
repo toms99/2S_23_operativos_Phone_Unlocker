@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <arduino_lib.h>
 
 #define BUFFER_SIZE 1024
 #define PORT 8080
@@ -178,6 +179,8 @@ int main()
 
             printf("Número descifrado: %s\n", decripted_number);
             printf("Modo: %d\n", mode);
+
+            arduino_hello();
 
             // Liberar memoria
             json_decref(root);

@@ -1,16 +1,22 @@
 all: build_Client build_Server
 
-build_Server:
-	gcc -o ./out/server ./server/server.c -ljansson
+# Server ----------------------------------------------------------
+
+build_Server: build_lib
+	gcc -o ./out/server ./server/server.c -ljansson -L./server/lib/ -larduino_lib -I./server/lib
 
 run_Server: build_Server
-	./out/server
+	sudo ./out/server
+
+# Client -----------------------------------------------------------
 
 build_Client:
 	gcc client/client.c -o out/client -ljansson -lc
 	
 run_Client: build_Client
-	./out/client 123456789 2
+	sudo ./out/client 123456789 2
+
+# Driver ------------------------------------------------------------
 
 obj-m += driver/arduino_driver.o
 
@@ -34,3 +40,12 @@ remove_driver_from_kernel:
 
 clean_driver:
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
+
+
+# Lib ------------------------------------------------------------
+
+build_lib:
+	gcc -c library/arduino_lib.c -o library/arduino_lib.o
+	ar rcs library/libarduino_lib.a library/arduino_lib.o
+	cp library/libarduino_lib.a server/lib
+	cp library/arduino_lib.h server/lib
