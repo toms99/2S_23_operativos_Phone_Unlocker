@@ -1,10 +1,13 @@
 void setup()
 {
-  pinMode(13, OUTPUT);    // Configura el Pin 13 como salida
-  digitalWrite(13, HIGH); // Enciende el Pin 13
+  pinMode(13, OUTPUT); // Configura el Pin 13 como salida
 }
 
 void loop()
 {
-  // No hay necesidad de agregar código en el loop ya que queremos mantener el Pin 13 encendido de manera estática
+  digitalWrite(13, LOW); // Apaga el Pin 13
+  delay(3000);           // Espera 3 segundos
+
+  digitalWrite(13, HIGH); // Enciende el Pin 13
+  delay(3000);            // Espera 3 segundos
 }

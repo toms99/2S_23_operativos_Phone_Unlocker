@@ -1,107 +1,153 @@
-#include <linux/module.h>
+#include <linux/init.h>
 #include <linux/kernel.h>
-#include <linux/fs.h>
-#include <linux/cdev.h>
-#include <linux/device.h>
+#include <linux/module.h>
+#include <linux/tty.h>
+#include <linux/tty_driver.h>
+#include <linux/tty_flip.h>
+#include <linux/serial.h>
+#include <linux/vmalloc.h>
 #include <linux/uaccess.h>
+#include <linux/mutex.h>
+#include <linux/fs.h>
+#include <asm/uaccess.h>
 
-#define ARDUINO_MINOR 0
-#define ARDUINO_DEVICE_NAME "arduino"
-
-static struct cdev arduino_cdev;
-static dev_t arduino_dev;
-static struct class *arduino_class;
-
-static int arduino_open(struct inode *inode, struct file *filp)
-{
-    return 0;
-}
-
-static ssize_t arduino_write(struct file *filp, const char __user *buffer, size_t count, loff_t *f_pos)
-{
-    char *data;
-    ssize_t ret;
-
-    data = kmalloc(count, GFP_KERNEL);
-    if (!data)
-        return -ENOMEM;
-
-    if (copy_from_user(data, buffer, count))
-    {
-        kfree(data);
-        return -EFAULT;
-    }
-
-    printk(KERN_INFO "arduino: Echo entrante\n");
-
-    // Realiza las operaciones necesarias para cargar el archivo .ino a la placa Arduino Uno
-    // Aquí puedes implementar tu lógica específica para cargar el archivo a la placa Arduino
-
-    kfree(data);
-
-    ret = count;
-    return ret;
-}
-
-static struct file_operations arduino_fops = {
-    .owner = THIS_MODULE,
-    .open = arduino_open,
-    .write = arduino_write,
-};
-
-static int __init arduino_init(void)
-{
-    int result;
-
-    // Alojar números de dispositivo
-    result = alloc_chrdev_region(&arduino_dev, ARDUINO_MINOR, 1, ARDUINO_DEVICE_NAME);
-    if (result < 0)
-    {
-        printk(KERN_ERR "arduino: no se pudo asignar el número de dispositivo\n");
-        return result;
-    }
-
-    // Crear la clase de dispositivo
-    arduino_class = class_create(THIS_MODULE, ARDUINO_DEVICE_NAME);
-    if (IS_ERR(arduino_class))
-    {
-        printk(KERN_ERR "arduino: no se pudo crear la clase de dispositivo\n");
-        unregister_chrdev_region(arduino_dev, 1);
-        return PTR_ERR(arduino_class);
-    }
-
-    // Crear el dispositivo
-    cdev_init(&arduino_cdev, &arduino_fops);
-    result = cdev_add(&arduino_cdev, arduino_dev, 1);
-    if (result < 0)
-    {
-        printk(KERN_ERR "arduino: no se pudo crear el dispositivo\n");
-        class_destroy(arduino_class);
-        unregister_chrdev_region(arduino_dev, 1);
-        return result;
-    }
-
-    // Crear el nodo del dispositivo
-    device_create(arduino_class, NULL, arduino_dev, NULL, ARDUINO_DEVICE_NAME);
-
-    printk(KERN_INFO "arduino: módulo cargado exitosamente\n");
-
-    return 0;
-}
-
-static void __exit arduino_exit(void)
-{
-    device_destroy(arduino_class, arduino_dev);
-    cdev_del(&arduino_cdev);
-    class_destroy(arduino_class);
-    unregister_chrdev_region(arduino_dev, 1);
-
-    printk(KERN_INFO "arduino: módulo descargado exitosamente\n");
-}
-
-module_init(arduino_init);
-module_exit(arduino_exit);
+extern int tty_write(struct tty_struct *tty, const unsigned char *buf, int count);
+extern struct tty_driver *alloc_tty_driver(int lines);
+extern void put_tty_driver(struct tty_driver *driver);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tu nombre");
-MODULE_DESCRIPTION("Módulo de kernel para cargar un archivo .ino en una placa Arduino Uno");
+MODULE_DESCRIPTION("Driver del Arduino UNO");
+MODULE_VERSION("0.1");
+
+static struct tty_driver *my_serial_driver;
+
+static int my_serial_write(struct tty_struct *tty, const unsigned char *buffer, int count)
+{
+    struct tty_port *port = tty->port;
+    int retval;
+
+    /* Esperar hasta que el puerto esté listo para enviar */
+    retval = tty_wait_until_sent(tty, MAX_SCHEDULE_TIMEOUT);
+    if (retval)
+        return retval;
+
+    /* Escribir en el puerto serie */
+    retval = tty_write(tty, buffer, count);
+    if (retval > 0)
+        retval = 0;
+
+    /* Esperar hasta que todos los caracteres se hayan enviado */
+    tty_wait_until_sent(tty, MAX_SCHEDULE_TIMEOUT);
+
+    return retval;
+}
+
+static int load_arduino_hex(const char *filename)
+{
+    struct file *file;
+    mm_segment_t old_fs;
+    char *buffer;
+    loff_t pos;
+    loff_t count, retval;
+
+    /* Abrir el archivo en modo lectura */
+    file = filp_open(filename, O_RDONLY, 0);
+    if (IS_ERR(file))
+    {
+        printk(KERN_ERR "No se pudo abrir el archivo\n");
+        return PTR_ERR(file);
+    }
+
+    /* Obtener el tamaño del archivo */
+    count = vfs_llseek(file, 0, SEEK_END);
+    pos = 0;
+    vfs_llseek(file, pos, SEEK_SET);
+
+    /* Asignar memoria para el buffer de lectura */
+    buffer = vmalloc(count);
+    if (!buffer)
+    {
+        printk(KERN_ERR "No se pudo asignar memoria\n");
+        retval = -ENOMEM;
+        goto error_buffer;
+    }
+
+    /* Leer el contenido del archivo */
+    retval = vfs_read(file, buffer, count, &pos);
+    if (retval < 0)
+    {
+        printk(KERN_ERR "Error al leer el archivo\n");
+        goto error_read;
+    }
+
+    /* Cargar el archivo hex al Arduino */
+    /* ... */
+
+    retval = 0;
+
+error_read:
+    vfree(buffer);
+error_buffer:
+    filp_close(file, NULL);
+    return retval;
+}
+
+static int __init arduino_loader_init(void)
+{
+    int ret;
+
+    /* Asignar el controlador TTY */
+    my_serial_driver = alloc_tty_driver(1);
+    if (!my_serial_driver)
+    {
+        printk(KERN_ERR "No se pudo asignar el controlador TTY\n");
+        return -ENOMEM;
+    }
+
+    my_serial_driver->owner = THIS_MODULE;
+    my_serial_driver->driver_name = "arduino_driver";
+    my_serial_driver->name = "ttyARD";
+    my_serial_driver->major = TTY_MAJOR;
+    my_serial_driver->minor_start = 0;
+    my_serial_driver->type = TTY_DRIVER_TYPE_SERIAL;
+    my_serial_driver->subtype = SERIAL_TYPE_NORMAL;
+    my_serial_driver->flags = TTY_DRIVER_REAL_RAW;
+    my_serial_driver->init_termios = tty_std_termios;
+    my_serial_driver->init_termios.c_cflag = B9600 | CS8 | CREAD | HUPCL | CLOCAL;
+    my_serial_driver->init_termios.c_iflag = IGNBRK | IGNPAR;
+    my_serial_driver->init_termios.c_oflag = 0;
+    my_serial_driver->init_termios.c_lflag = 0;
+    my_serial_driver->init_termios.c_ispeed = 9600;
+    my_serial_driver->init_termios.c_ospeed = 9600;
+    tty_set_operations(my_serial_driver, NULL);
+
+    /* Registrar el controlador TTY */
+    ret = tty_register_driver(my_serial_driver);
+    if (ret < 0)
+    {
+        printk(KERN_ERR "Error al registrar el controlador TTY\n");
+        put_tty_driver(my_serial_driver);
+        return ret;
+    }
+
+    /* Cargar el archivo hex al Arduino */
+    ret = load_arduino_hex("firmware.hex");
+    if (ret < 0)
+    {
+        printk(KERN_ERR "Error al cargar el archivo hex al Arduino\n");
+        tty_unregister_driver(my_serial_driver);
+        return ret;
+    }
+
+    return 0;
+}
+
+static void __exit arduino_loader_exit(void)
+{
+    /* Desregistrar el controlador TTY */
+    tty_unregister_driver(my_serial_driver);
+}
+
+module_init(arduino_loader_init);
+module_exit(arduino_loader_exit);
