@@ -1,138 +1,107 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/fs.h>
-#include <linux/usb.h>
 #include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/uaccess.h>
 
-// ID del dispositivo USB
-#define USB_VENDOR_ID 0x2341
-#define USB_PRODUCT_ID 0x0043
+#define ARDUINO_MINOR 0
+#define ARDUINO_DEVICE_NAME "arduino"
 
-static struct usb_device_id device_table[] = {
-    {USB_DEVICE(USB_VENDOR_ID, USB_PRODUCT_ID)},
-    {} // Terminador de la tabla
-};
-MODULE_DEVICE_TABLE(usb, device_table);
+static struct cdev arduino_cdev;
+static dev_t arduino_dev;
+static struct class *arduino_class;
 
-static int device_probe(struct usb_interface *interface, const struct usb_device_id *id)
+static int arduino_open(struct inode *inode, struct file *filp)
 {
-    printk(KERN_INFO "Dispositivo USB detectado: Vendor ID = 0x%04X, Product ID = 0x%04X\n",
-           id->idVendor, id->idProduct);
-
-    // Hacer algo con el dispositivo, por ejemplo, imprimir información adicional
-
     return 0;
 }
 
-static void device_disconnect(struct usb_interface *interface)
+static ssize_t arduino_write(struct file *filp, const char __user *buffer, size_t count, loff_t *f_pos)
 {
-    printk(KERN_INFO "Dispositivo USB desconectado\n");
+    char *data;
+    ssize_t ret;
 
-    // Realizar acciones de limpieza y liberación de recursos si es necesario
-}
+    data = kmalloc(count, GFP_KERNEL);
+    if (!data)
+        return -ENOMEM;
 
-static int device_open(struct inode *inode, struct file *file)
-{
-    printk(KERN_INFO "Archivo del dispositivo abierto\n");
-    return 0;
-}
-
-static int device_release(struct inode *inode, struct file *file)
-{
-    printk(KERN_INFO "Archivo del dispositivo cerrado\n");
-    return 0;
-}
-
-static ssize_t device_read(struct file *file, char __user *buffer, size_t length, loff_t *offset)
-{
-    printk(KERN_INFO "Leyendo del archivo del dispositivo\n");
-    return 0;
-}
-
-static ssize_t device_write(struct file *file, const char __user *buffer, size_t length, loff_t *offset)
-{
-    printk(KERN_INFO "Escribiendo en el archivo del dispositivo\n");
-    return length;
-}
-
-static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-    printk(KERN_INFO "IOCTL del dispositivo llamado. Comando: %u\n", cmd);
-
-    switch (cmd)
+    if (copy_from_user(data, buffer, count))
     {
-    case 0: // Comando personalizado para imprimir un mensaje
-        printk(KERN_INFO "Hola soy el arduino\n");
-        break;
-
-    default:
-        return -EINVAL; // Comando no válido
+        kfree(data);
+        return -EFAULT;
     }
 
-    return 0;
+    printk(KERN_INFO "arduino: Echo entrante\n");
+
+    // Realiza las operaciones necesarias para cargar el archivo .ino a la placa Arduino Uno
+    // Aquí puedes implementar tu lógica específica para cargar el archivo a la placa Arduino
+
+    kfree(data);
+
+    ret = count;
+    return ret;
 }
 
-static struct usb_driver device_driver = {
-    .name = "arduino_driver",
-    .id_table = device_table,
-    .probe = device_probe,
-    .disconnect = device_disconnect,
+static struct file_operations arduino_fops = {
+    .owner = THIS_MODULE,
+    .open = arduino_open,
+    .write = arduino_write,
 };
 
-static struct cdev cdev;
-static dev_t dev;
-
-static const struct file_operations device_fops = {
-    .open = device_open,
-    .release = device_release,
-    .read = device_read,
-    .write = device_write,
-    .unlocked_ioctl = device_ioctl,
-};
-
-static int __init custom_module_init(void)
+static int __init arduino_init(void)
 {
     int result;
 
-    dev = MKDEV(9, 11);
-    result = register_chrdev_region(dev, 1, "arduino_device");
+    // Alojar números de dispositivo
+    result = alloc_chrdev_region(&arduino_dev, ARDUINO_MINOR, 1, ARDUINO_DEVICE_NAME);
     if (result < 0)
     {
-        printk(KERN_ALERT "Error al registrar el número mayor del dispositivo: %d\n", result);
+        printk(KERN_ERR "arduino: no se pudo asignar el número de dispositivo\n");
         return result;
     }
 
-    // Asignar las operaciones del dispositivo
-    cdev_init(&cdev, &device_fops);
-    cdev_add(&cdev, dev, 1);
+    // Crear la clase de dispositivo
+    arduino_class = class_create(THIS_MODULE, ARDUINO_DEVICE_NAME);
+    if (IS_ERR(arduino_class))
+    {
+        printk(KERN_ERR "arduino: no se pudo crear la clase de dispositivo\n");
+        unregister_chrdev_region(arduino_dev, 1);
+        return PTR_ERR(arduino_class);
+    }
 
-    printk(KERN_INFO "Número mayor del dispositivo registrado: %d\n", MAJOR(dev));
-
-    printk(KERN_INFO "Init Arduino Driver\n");
-    result = usb_register(&device_driver);
+    // Crear el dispositivo
+    cdev_init(&arduino_cdev, &arduino_fops);
+    result = cdev_add(&arduino_cdev, arduino_dev, 1);
     if (result < 0)
     {
-        printk(KERN_ALERT "Error al registrar el controlador USB: %d\n", result);
-        unregister_chrdev_region(dev, 1);
+        printk(KERN_ERR "arduino: no se pudo crear el dispositivo\n");
+        class_destroy(arduino_class);
+        unregister_chrdev_region(arduino_dev, 1);
         return result;
     }
+
+    // Crear el nodo del dispositivo
+    device_create(arduino_class, NULL, arduino_dev, NULL, ARDUINO_DEVICE_NAME);
+
+    printk(KERN_INFO "arduino: módulo cargado exitosamente\n");
 
     return 0;
 }
 
-static void __exit custom_module_exit(void)
+static void __exit arduino_exit(void)
 {
-    usb_deregister(&device_driver);
+    device_destroy(arduino_class, arduino_dev);
+    cdev_del(&arduino_cdev);
+    class_destroy(arduino_class);
+    unregister_chrdev_region(arduino_dev, 1);
 
-    cdev_del(&cdev);
-    unregister_chrdev_region(dev, 1);
-
-    printk(KERN_INFO "Exit Arduino Driver\n");
+    printk(KERN_INFO "arduino: módulo descargado exitosamente\n");
 }
 
-module_init(custom_module_init);
-module_exit(custom_module_exit);
+module_init(arduino_init);
+module_exit(arduino_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Fabian");
-MODULE_DESCRIPTION("Controlador USB para Arduino");
+MODULE_AUTHOR("Tu nombre");
+MODULE_DESCRIPTION("Módulo de kernel para cargar un archivo .ino en una placa Arduino Uno");
