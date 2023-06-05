@@ -1,0 +1,67 @@
+.K3 {
+    --ion-grid-width: 400px;
+    --ion-grid-column-padding: 0px;
+}
+
+.K2 {
+    --ion-grid-width: 300px;
+    --ion-grid-column-padding: 0px;
+}
+
+.K1 {
+    --ion-grid-width: 200px;
+    --ion-grid-column-padding: 0px;
+}
+
+ion-grid {
+    margin-top: 5%;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 4px 30px rgba(190, 189, 189, 0.1);
+    backdrop-filter: blur(5px);
+}
+
+ion-col {
+    background-color: transparent;
+    color: #fff;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.transparentCell {
+    background-color: transparent;
+    border: 0px;
+}
+
+ion-select {
+    margin-top: 10%;
+    width: 50%;
+    margin-left: 25%;
+    align-items: center;
+    align-content: center;
+    align-self: center;
+    text-align: center;
+}
+
+ion-button {
+    --padding-top: 20%;
+    --padding-bottom: 20%;
+    height: 100%;
+    width: 100%;
+    --background: transparent;
+    --border-width: 0;
+    --box-shadow: 0 0 0;
+}
+
+ion-item {
+    margin-top: 10%;
+    margin-bottom: 5%;
+    margin-left: 25%;
+    width: 50%;
+
+    --background: transparent;
+}
+
+ion-label {
+    --background: transparent;
+}

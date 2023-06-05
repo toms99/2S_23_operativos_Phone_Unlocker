@@ -1,0 +1,44 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Keyboard</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Keyboard</ion-title>
+    </ion-toolbar>
+
+  </ion-header>
+  <ion-select aria-label="Keyboard size" (ionChange)="setKeyoboard($event)" interface="action-sheet" cancelText="Cancel"
+    placeholder="Select keyboard size">
+    <ion-select-option value=1>Small</ion-select-option>
+    <ion-select-option value=2>Medium</ion-select-option>
+    <ion-select-option value=3>Large</ion-select-option>
+  </ion-select>
+  <ion-item>
+    <ion-label fixed>{{currentInsertedCode}}</ion-label>
+  </ion-item>
+  <ion-grid [fixed]="true"
+    [ngClass]="{'K1':keyboardSelected == 1, 'K2':keyboardSelected == 2, 'K3':keyboardSelected == 3}">
+    <ion-row *ngFor="let value of [1,4,7]">
+      <ion-col><ion-button (click)="setNumber(value)">{{value}}</ion-button></ion-col>
+      <ion-col><ion-button (click)="setNumber(value+1)">{{value +1}}</ion-button></ion-col>
+      <ion-col><ion-button (click)="setNumber(value+2)">{{value + 2}}</ion-button></ion-col>
+    </ion-row>
+    <ion-row>
+      <ion-col class="transparentCell"></ion-col>
+      <ion-col (click)="setNumber(0)"><ion-button>0</ion-button></ion-col>
+      <ion-col class="transparentCell"></ion-col>
+    </ion-row>
+    <ion-row>
+      <ion-col><ion-button (click)="clearCode()">Clear</ion-button></ion-col>
+      <ion-col><ion-button (click)="verifyCode()">Ok</ion-button> </ion-col>
+    </ion-row>
+  </ion-grid>
+
+</ion-content>
