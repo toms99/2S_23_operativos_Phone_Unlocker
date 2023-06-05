@@ -1,29 +1,29 @@
 .K3 {
-    --ion-grid-width: 400px;
+    --ion-grid-width: 600px;
     --ion-grid-column-padding: 0px;
 }
 
 .K2 {
-    --ion-grid-width: 300px;
+    --ion-grid-width: 500px;
     --ion-grid-column-padding: 0px;
 }
 
 .K1 {
-    --ion-grid-width: 200px;
+    --ion-grid-width: 400px;
     --ion-grid-column-padding: 0px;
 }
 
 ion-grid {
     margin-top: 5%;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(138, 1, 1, 0.661);
     border-radius: 16px;
-    box-shadow: 0 4px 30px rgba(190, 189, 189, 0.1);
+    box-shadow: 0 4px 30px rgba(30, 30, 30, 0.1);
     backdrop-filter: blur(5px);
 }
 
 ion-col {
     background-color: transparent;
-    color: #fff;
+    color: #490000;
     text-align: center;
     vertical-align: middle;
 }
