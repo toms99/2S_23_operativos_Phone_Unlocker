@@ -117,6 +117,9 @@ int main()
         const char *number = json_string_value(json_object_get(root, "number"));
         int mode = json_integer_value(json_object_get(root, "mode"));
 
+        printf("Json: %s\n", json_dumps(root, JSON_COMPACT));
+        printf("Modo: %d\n", mode);
+
         // Copiar el número en un nuevo arreglo de caracteres
         char decripted_number[strlen(number) + 1];
         strcpy(decripted_number, number);
@@ -178,9 +181,8 @@ int main()
             decryptNumber(decripted_number, key);
 
             printf("Número descifrado: %s\n", decripted_number);
-            printf("Modo: %d\n", mode);
 
-            arduino_hello();
+            arduino_hello(mode);
 
             // Liberar memoria
             json_decref(root);

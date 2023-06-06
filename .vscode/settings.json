@@ -1,7 +1,8 @@
 {
     "files.associations": {
         "jansson.h": "c",
-        "module.h": "c"
+        "module.h": "c",
+        "typeinfo": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

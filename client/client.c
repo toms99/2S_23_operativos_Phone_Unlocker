@@ -92,10 +92,12 @@ int main(int argc, char *argv[])
 
     printf("Número cifrado: %s\n", number);
 
+    int mode_int = atoi(modo);
+
     // Crear el objeto JSON
     json_t *root = json_object();
     json_object_set_new(root, "number", json_string(number));
-    json_object_set_new(root, "mode", json_string(modo));
+    json_object_set_new(root, "mode", json_integer(mode_int));
 
     // Convertir el objeto JSON a una cadena
     char *jsonStr = json_dumps(root, JSON_COMPACT);
