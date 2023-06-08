@@ -18,30 +18,28 @@ run_Client: build_Client
 
 # Driver ------------------------------------------------------------
 
-obj-m += driver/arduino_driver.o
+obj-m += driver/SO_driver.o
 
 KDIR := /lib/modules/$(shell uname -r)/build
 PWD := $(shell pwd)
-CC = x86_64-linux-gnu-gcc
 
 build_driver: clean_driver 
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules CC=$(CC)
+	make -C /lib/modules/$(shell uname -r)/build M=$(shell pwd) modules
 
 add_driver_to_kernel: build_driver remove_driver_from_kernel
 	sudo insmod driver/arduino_driver.ko
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
 
 first_add_driver_to_kernel: build_driver
-	sudo mknod /dev/ttyARD c 510 0
-	sudo chmod 777 /dev/ttyARD
-	sudo insmod driver/arduino_driver.ko
+	sudo rmmod ftdi_sio
+	sudo insmod driver/SO_driver.ko
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
 
 remove_driver_from_kernel:
-	sudo rmmod arduino_driver
+	sudo rmmod SO_driver
 
 clean_driver:
-	$(MAKE) -C $(KDIR) M=$(PWD) clean
+	make -C /lib/modules/$(shell uname -r)/build M=$(shell pwd) clean
 
 
 # Lib ------------------------------------------------------------
