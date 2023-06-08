@@ -6,7 +6,7 @@ extern "C"
 {
 #endif
 
-    void arduino_hello();
+    void unlocker_conn();
 
 #ifdef __cplusplus
 }

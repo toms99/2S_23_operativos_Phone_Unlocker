@@ -14,8 +14,6 @@
 #define BUFFER_SIZE 1024
 #define PORT 8080
 
-
-
 void decryptNumber(char *number, const char *key)
 {
     size_t numberLen = strlen(number);
@@ -139,7 +137,7 @@ int main()
             return 0;
         }
 
-        //printf("Buffer: %s\n", result_buffer);
+        // printf("Buffer: %s\n", result_buffer);
 
         // Deserializar el objeto JSON recibido
         json_error_t error;
@@ -160,7 +158,7 @@ int main()
         const char *number = json_string_value(json_object_get(root, "number"));
         int mode = json_integer_value(json_object_get(root, "mode"));
 
-        //printf("Json: %s\n", json_dumps(root, JSON_COMPACT));
+        // printf("Json: %s\n", json_dumps(root, JSON_COMPACT));
         printf("\n*************************\n");
         changePrintColor(BLUE);
         printf("Modo: %d\n", mode);
@@ -229,11 +227,11 @@ int main()
 
             // Descifrar el número
             decryptNumber(decripted_number, key);
-            
+
             changePrintColor(BLUE);
             printf("Número descifrado: %s\n\n", decripted_number);
             changePrintColor(RESET);
-            //arduino_hello(mode, decripted_number);
+            unlocker_conn(mode, decripted_number);
 
             // Liberar memoria
             json_decref(root);

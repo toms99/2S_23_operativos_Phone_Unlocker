@@ -73,7 +73,7 @@ static void agregarComas(char *cadena)
     free(resultado); // Liberar la memoria asignada
 }
 
-void arduino_hello(int modo, char *decripted_number)
+void unlocker_conn(int modo, char *decripted_number)
 {
 
     const char *port = "/dev/ttyUSB0"; // Puerto serie
