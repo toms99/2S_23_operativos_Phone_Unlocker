@@ -70,7 +70,7 @@ static void enviarMensaje(int fd, int modo)
 void arduino_hello(int modo)
 {
 
-    const char *port = "/dev/ttyACM0"; // Puerto serie
+    const char *port = "/dev/ttyUSB0"; // Puerto serie
     speed_t baudRate = B9600;          // Baud rate
 
     // Configurar el puerto serie
