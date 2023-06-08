@@ -77,7 +77,7 @@ void cases(int caso) {
       press(posX - sepX, posY, posZ);
       break;
     case 3:
-      press(posX - 2 * sepX, posY, posZ);
+      press(posX - 2 * sepX, posY + 2, posZ);
       break;
     case 4:
       press(posX, posY - sepYZ, posZ - sepYZ);
@@ -111,8 +111,8 @@ void cases(int caso) {
     case 500://Large Screen
 
       posX = 105;
-      posY = 130;
-      posZ = 115;
+      posY = 132;
+      posZ = 115; 
 
       sepX = 20;
       sepYZ = 9;
@@ -127,7 +127,7 @@ void cases(int caso) {
       sepYZ = 9;
       break;
     case 502: // Small Screen
-      posY = 120;
+      posY = 119;
       posZ = 107;
       sepYZ = 7;
       sepX = 17;

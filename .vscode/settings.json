@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "jansson.h": "c",
+        "module.h": "c",
+        "typeinfo": "c",
+        "device_driver.h": "c",
+        "so_driver.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
+}
