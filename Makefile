@@ -14,7 +14,8 @@ build_Client:
 	gcc client/client.c -o out/client -ljansson -lc
 	
 run_Client: build_Client
-	sudo ./out/client 123456789 2
+	./out/client
+#	sudo ./out/client 123456789 2
 
 # Driver ------------------------------------------------------------
 

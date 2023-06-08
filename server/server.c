@@ -9,9 +9,12 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <arduino_lib.h>
+#include "../util/colors.h"
 
 #define BUFFER_SIZE 1024
 #define PORT 8080
+
+
 
 void decryptNumber(char *number, const char *key)
 {
@@ -29,14 +32,18 @@ char *getEncryptionKey(const char *key_path)
     FILE *keyFilePtr = fopen(key_path, "r");
     if (keyFilePtr == NULL)
     {
+        changePrintColor(RED);
         printf("Error: No se pudo abrir el archivo de clave.\n");
+        changePrintColor(RESET);
         return NULL;
     }
 
     char key[100];
     if (fgets(key, sizeof(key), keyFilePtr) == NULL)
     {
+        changePrintColor(RED);
         printf("Error: No se pudo leer la clave del archivo.\n");
+        changePrintColor(RESET);
         fclose(keyFilePtr);
         return NULL;
     }
@@ -52,7 +59,9 @@ char *getEncryptionKey(const char *key_path)
     char *encryptedKey = malloc((keyLen + 1) * sizeof(char));
     if (encryptedKey == NULL)
     {
+        changePrintColor(RED);
         printf("Error: No se pudo asignar memoria para la clave encriptada.\n");
+        changePrintColor(RESET);
         return NULL;
     }
 
@@ -73,7 +82,9 @@ int main()
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd == -1)
     {
+        changePrintColor(RED);
         perror("Error al crear el socket");
+        changePrintColor(RESET);
         exit(1);
     }
 
@@ -86,11 +97,15 @@ int main()
     // Vincular el socket a la dirección del servidor
     if (bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1)
     {
+        changePrintColor(RED);
         perror("Error al vincular el socket");
+        changePrintColor(RESET);
         exit(1);
     }
 
+    changePrintColor(GREEN);
     printf("Servidor escuchando en el puerto %d\n", PORT);
+    changePrintColor(RESET);
 
     while (1)
     {
@@ -100,7 +115,9 @@ int main()
         ssize_t numBytes = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&cliaddr, &len);
         if (numBytes == -1)
         {
+            changePrintColor(RED);
             perror("Error al recibir datos");
+            changePrintColor(RESET);
             exit(1);
         }
 
@@ -116,18 +133,22 @@ int main()
         }
         else
         {
-            printf("No se encontraron llaves de apertura y cierre en el buffer.\n");
+            changePrintColor(RED);
+            perror("No se encontraron llaves de apertura y cierre en el buffer.\n");
+            changePrintColor(RESET);
             return 0;
         }
 
-        printf("Buffer: %s\n", result_buffer);
+        //printf("Buffer: %s\n", result_buffer);
 
         // Deserializar el objeto JSON recibido
         json_error_t error;
         json_t *root = json_loads(result_buffer, 0, &error);
         if (!root)
         {
+            changePrintColor(RED);
             fprintf(stderr, "Error al deserializar JSON: %s\n", error.text);
+            changePrintColor(RESET);
             exit(1);
         }
 
@@ -139,8 +160,11 @@ int main()
         const char *number = json_string_value(json_object_get(root, "number"));
         int mode = json_integer_value(json_object_get(root, "mode"));
 
-        printf("Json: %s\n", json_dumps(root, JSON_COMPACT));
+        //printf("Json: %s\n", json_dumps(root, JSON_COMPACT));
+        printf("\n*************************\n");
+        changePrintColor(BLUE);
         printf("Modo: %d\n", mode);
+        changePrintColor(RESET);
 
         // Copiar el número en un nuevo arreglo de caracteres
         char decripted_number[strlen(number) + 1];
@@ -150,7 +174,9 @@ int main()
         int pipefd[2];
         if (pipe(pipefd) == -1)
         {
+            changePrintColor(RED);
             perror("Error al crear la tubería");
+            changePrintColor(RESET);
             exit(1);
         }
 
@@ -159,7 +185,9 @@ int main()
 
         if (pid == -1)
         {
+            changePrintColor(RED);
             perror("Error al crear proceso hijo");
+            changePrintColor(RESET);
             exit(1);
         }
         else if (pid == 0)
@@ -201,10 +229,11 @@ int main()
 
             // Descifrar el número
             decryptNumber(decripted_number, key);
-
-            printf("Número descifrado: %s\n", decripted_number);
-
-            arduino_hello(mode, decripted_number);
+            
+            changePrintColor(BLUE);
+            printf("Número descifrado: %s\n\n", decripted_number);
+            changePrintColor(RESET);
+            //arduino_hello(mode, decripted_number);
 
             // Liberar memoria
             json_decref(root);

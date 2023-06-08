@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "../util/colors.h"
+#include <ctype.h> 
 
 void encryptNumber(char *number, const char *key)
 {
@@ -61,68 +63,112 @@ char *key_path = "util/key.txt";
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 8080
 
-int main(int argc, char *argv[])
+int main()
 {
-
-    if (argc < 3)
+    while (1)
     {
-        printf("Error: Se requieren dos parámetros.\n");
-        printf("Uso: %s <número> <clave>\n", argv[0]);
-        return 1;
+        char number[100];
+        char modo[10];
+
+        changePrintColor(GREEN);
+        printf("Ingrese el número: ");
+        changePrintColor(RESET);
+        fgets(number, sizeof(number), stdin);
+        number[strcspn(number, "\n")] = '\0'; // Eliminar el salto de línea
+
+        // Validar que la variable number no contenga letras
+        int numberLen = strlen(number);
+        int containsLetters = 0;
+        for (int i = 0; i < numberLen; i++)
+        {
+            if (!isdigit(number[i]))
+            {
+                containsLetters = 1;
+                break;
+            }
+        }
+
+        if (containsLetters)
+        {
+            changePrintColor(RED);
+            printf("\nError: El número no puede contener letras\n\n");
+            changePrintColor(RESET);
+            continue;
+        }
+
+        changePrintColor(BLUE);
+        printf("Ingrese el modo: ");
+        changePrintColor(RESET);
+        fgets(modo, sizeof(modo), stdin);
+        modo[strcspn(modo, "\n")] = '\0'; // Eliminar el salto de línea
+
+        if (strlen(number) == 0 || strlen(modo) == 0)
+        {
+            changePrintColor(RED);
+            printf("Error: Falta de argumentos\n");
+            changePrintColor(RESET);
+            continue;
+        }
+
+        // Validar que el número solo acepte los valores 1, 2 o 3
+        if (strcmp(modo, "1") != 0 && strcmp(modo, "2") != 0 && strcmp(modo, "3") != 0)
+        {
+            changePrintColor(RED);
+            printf("\nError: El modo debe ser 1, 2 o 3\n\n");
+            changePrintColor(RESET);
+            continue;
+        }
+
+        char *key = getEncryptionKey(key_path);
+
+        encryptNumber(number, key);
+
+        //printf("Número cifrado: %s\n", number);
+
+        int mode_int = atoi(modo);
+
+        // Crear el objeto JSON
+        json_t *root = json_object();
+        json_object_set_new(root, "number", json_string(number));
+        json_object_set_new(root, "mode", json_integer(mode_int));
+
+        // Convertir el objeto JSON a una cadena
+        char *jsonStr = json_dumps(root, JSON_COMPACT);
+        //printf("JSON enviado: %s\n", jsonStr);
+        changePrintColor(WHITE);
+        printf("\nEnviando JSON al servidor...\n\n");
+
+        // Crear socket UDP
+        int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (sockfd == -1)
+        {
+            changePrintColor(RED);
+            perror("Error al crear el socket");
+            changePrintColor(RESET);
+            exit(1);
+        }
+
+        // Configurar dirección del servidor
+        struct sockaddr_in servaddr;
+        memset(&servaddr, 0, sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+        servaddr.sin_port = htons(SERVER_PORT);
+
+        // Enviar el JSON al servidor
+        ssize_t numBytes = sendto(sockfd, jsonStr, strlen(jsonStr), 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+        if (numBytes == -1)
+        {
+            changePrintColor(RED);
+            perror("Error al enviar datos");
+            changePrintColor(RESET);
+            exit(1);
+        }
+
+        // Liberar recursos
+        json_decref(root);
+        close(sockfd);
     }
-
-    char *number = argv[1];
-    const char *modo = argv[2];
-
-    if (strlen(modo) == 0 || strlen(number) == 0)
-    {
-        printf("Error: Falta de argumentos\n");
-        return 1;
-    }
-
-    char *key = getEncryptionKey(key_path);
-
-    encryptNumber(number, key);
-
-    printf("Número cifrado: %s\n", number);
-
-    int mode_int = atoi(modo);
-
-    // Crear el objeto JSON
-    json_t *root = json_object();
-    json_object_set_new(root, "number", json_string(number));
-    json_object_set_new(root, "mode", json_integer(mode_int));
-
-    // Convertir el objeto JSON a una cadena
-    char *jsonStr = json_dumps(root, JSON_COMPACT);
-    printf("JSON enviado: %s\n", jsonStr);
-
-    // Crear socket UDP
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd == -1)
-    {
-        perror("Error al crear el socket");
-        exit(1);
-    }
-
-    // Configurar dirección del servidor
-    struct sockaddr_in servaddr;
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
-    servaddr.sin_port = htons(SERVER_PORT);
-
-    // Enviar el JSON al servidor
-    ssize_t numBytes = sendto(sockfd, jsonStr, strlen(jsonStr), 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-    if (numBytes == -1)
-    {
-        perror("Error al enviar datos");
-        exit(1);
-    }
-
-    // Liberar recursos
-    json_decref(root);
-    close(sockfd);
 
     return 0;
 }
