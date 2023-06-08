@@ -104,14 +104,36 @@ int main()
             exit(1);
         }
 
+        // Elimina caracteres basura del buffer
+        char result_buffer[BUFFER_SIZE];
+        char *start_ptr = strchr(buffer, '{');
+        char *end_ptr = strrchr(buffer, '}');
+        if (start_ptr != NULL && end_ptr != NULL && start_ptr < end_ptr)
+        {
+            size_t length = end_ptr - start_ptr + 1;
+            strncpy(result_buffer, start_ptr, length);
+            result_buffer[length] = '\0';
+        }
+        else
+        {
+            printf("No se encontraron llaves de apertura y cierre en el buffer.\n");
+            return 0;
+        }
+
+        printf("Buffer: %s\n", result_buffer);
+
         // Deserializar el objeto JSON recibido
         json_error_t error;
-        json_t *root = json_loads(buffer, 0, &error);
+        json_t *root = json_loads(result_buffer, 0, &error);
         if (!root)
         {
             fprintf(stderr, "Error al deserializar JSON: %s\n", error.text);
             exit(1);
         }
+
+        // Vaciar el buffer
+        memset(result_buffer, 0, sizeof(result_buffer));
+        memset(buffer, 0, sizeof(buffer));
 
         // Obtener los valores del objeto JSON
         const char *number = json_string_value(json_object_get(root, "number"));
@@ -182,7 +204,7 @@ int main()
 
             printf("Número descifrado: %s\n", decripted_number);
 
-            arduino_hello(mode);
+            arduino_hello(mode, decripted_number);
 
             // Liberar memoria
             json_decref(root);

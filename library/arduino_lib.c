@@ -39,24 +39,8 @@ static void serialWrite(int fd, char byte)
 }
 
 // Función para enviar un mensaje según el modo seleccionado
-static void enviarMensaje(int fd, int modo)
+static void enviarMensaje(int fd, char *mensaje)
 {
-    char mensaje[10];
-    switch (modo)
-    {
-    case 1:
-        sprintf(mensaje, "100");
-        break;
-    case 2:
-        sprintf(mensaje, "500");
-        break;
-    case 3:
-        sprintf(mensaje, "1000");
-        break;
-    default:
-        sprintf(mensaje, "2000");
-    }
-    printf("escribiendo el mensaje modo: %d\n", modo);
 
     // Enviar cada byte del mensaje
     for (int i = 0; i < strlen(mensaje); i++)
@@ -67,17 +51,59 @@ static void enviarMensaje(int fd, int modo)
     }
 }
 
-void arduino_hello(int modo)
+static void agregarComas(char *cadena)
+{
+    size_t longitud = strlen(cadena);
+    char *resultado = (char *)malloc(2 * longitud); // Asignar memoria para el resultado
+    int indice = 0;
+
+    for (size_t i = 0; i < longitud; i++)
+    {
+        resultado[indice++] = cadena[i];
+        if (i < longitud - 1)
+        {
+            resultado[indice++] = ',';
+        }
+    }
+
+    resultado[indice] = '\0'; // Agregar el carácter nulo al final de la cadena
+
+    strcpy(cadena, resultado); // Copiar el resultado de vuelta a la variable original
+
+    free(resultado); // Liberar la memoria asignada
+}
+
+void arduino_hello(int modo, char *decripted_number)
 {
 
     const char *port = "/dev/ttyUSB0"; // Puerto serie
-    speed_t baudRate = B9600;          // Baud rate
+
+    speed_t baudRate = B9600; // Baud rate
+    char message[strlen(decripted_number) * 2 + 8];
+    agregarComas(decripted_number);
+
+    if (modo == 1)
+    {
+        strcpy(message, "500,");
+    }
+    else if (modo == 2)
+    {
+        strcpy(message, "501,");
+    }
+    else
+    {
+        strcpy(message, "502,");
+    }
+
+    strcat(message, decripted_number);
+    strcat(message, ",%");
+    printf("%s\n", message);
 
     // Configurar el puerto serie
     int fd = setupSerialPort(port, baudRate);
 
     // Enviar el mensaje según el modo seleccionado
-    enviarMensaje(fd, modo);
+    enviarMensaje(fd, message);
 
     // Cerrar el puerto serie
     close(fd);

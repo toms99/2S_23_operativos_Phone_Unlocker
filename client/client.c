@@ -74,15 +74,9 @@ int main(int argc, char *argv[])
     char *number = argv[1];
     const char *modo = argv[2];
 
-    if (strlen(number) > 9)
+    if (strlen(modo) == 0 || strlen(number) == 0)
     {
-        printf("Error: El número debe tener hasta 9 dígitos.\n");
-        return 1;
-    }
-
-    if (strlen(modo) == 0)
-    {
-        printf("Error: La clave no puede estar vacía.\n");
+        printf("Error: Falta de argumentos\n");
         return 1;
     }
 
