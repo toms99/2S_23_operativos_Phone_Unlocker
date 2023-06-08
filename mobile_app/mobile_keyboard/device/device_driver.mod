@@ -1,0 +1,1 @@
+/home/mario/Desktop/2S_23_operativos_Phone_Unlocker/mobile_app/mobile_keyboard/device/device_driver.o

@@ -1,0 +1,1 @@
+cmd_/home/mario/Desktop/2S_23_operativos_Phone_Unlocker/mobile_app/mobile_keyboard/device/modules.order := {   echo /home/mario/Desktop/2S_23_operativos_Phone_Unlocker/mobile_app/mobile_keyboard/device/device_driver.ko; :; } | awk '!x[$$0]++' - > /home/mario/Desktop/2S_23_operativos_Phone_Unlocker/mobile_app/mobile_keyboard/device/modules.order

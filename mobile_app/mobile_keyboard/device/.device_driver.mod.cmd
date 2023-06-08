@@ -1,0 +1,1 @@
+cmd_/home/mario/Desktop/2S_23_operativos_Phone_Unlocker/mobile_app/mobile_keyboard/device/device_driver.mod := printf '%s\n'   device_driver.o | awk '!x[$$0]++ { print("/home/mario/Desktop/2S_23_operativos_Phone_Unlocker/mobile_app/mobile_keyboard/device/"$$0) }' > /home/mario/Desktop/2S_23_operativos_Phone_Unlocker/mobile_app/mobile_keyboard/device/device_driver.mod
